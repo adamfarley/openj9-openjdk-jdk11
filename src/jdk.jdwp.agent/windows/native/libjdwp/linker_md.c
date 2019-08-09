@@ -43,6 +43,7 @@
 
 #include "sys.h"
 
+#include "util.h"
 #include "path_md.h"
 
 static void dll_build_name(char* buffer, size_t buflen,
@@ -61,7 +62,8 @@ static void dll_build_name(char* buffer, size_t buflen,
     while (path != NULL) {
         size_t result_len = (size_t)_snprintf(buffer, buflen, "%s\\%s.dll", path, fname);
         if (result_len >= buflen) {
-            /* Ignore this path that doesn't fit in the supplied buffer. */
+            EXIT_ERROR(JVMTI_ERROR_INVALID_LOCATION, "One or more of the library paths supplied to jdwp, "
+                                                     "likely by sun.boot.library.path, is too long.");
         } else if (_access(buffer, 0) == 0) {
             break;
         }
@@ -117,11 +119,10 @@ dbgsysBuildLibName(char *holder, size_t holderlen, const char *pname, const char
     const int pnamelen = pname ? (int)strlen(pname) : 0;
 
     if (pnamelen == 0) {
-        size_t result_len = (size_t)_snprintf(holder, holderlen, "%s.dll", fname);
-        if (result_len >= holderlen) {
-            /* Ignore this path that doesn't fit in the supplied buffer. */
-            *holder = '\0';
-        }
+     if (pnamelen + (int)strlen(fname) + 10 > holderlen) {
+       EXIT_ERROR(JVMTI_ERROR_INVALID_LOCATION, "One or more of the library paths supplied to jdwp, "
+                                                     "likely by sun.boot.library.path, is too long.");
+     }
     } else {
       dll_build_name(holder, holderlen, pname, fname);
     }
